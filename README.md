@@ -56,3 +56,6 @@ python -m unittest discover -s tests
 
 현재 추천 엔진은 `backend/app/data/pc_dataset_augmented_price_compat_2026_05_csv/`의 CSV 파일을 사용합니다.
 가격 정보는 추정값이므로 실제 구매 전 실시간 가격 확인이 필요합니다.
+
+원본 벤치마크 CSV 데이터 출처:
+https://www.userbenchmark.com/page/developer
