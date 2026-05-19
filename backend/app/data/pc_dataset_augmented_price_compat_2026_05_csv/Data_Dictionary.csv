@@ -1,0 +1,13 @@
+﻿column,description
+part_id,서비스 내부에서 사용하는 고유 부품 ID
+price_krw_estimate,2026년 5월 한국 시장 기준 대표 추정 가격. 실시간 최저가 아님
+price_reference_date,가격 기준 월
+price_basis,가격 추정 방법 또는 기준
+inference_confidence,모델명 기반 추론 신뢰도: high/medium/low
+socket,CPU 또는 메인보드 소켓
+memory_type / memory_type_supported,"DDR4, DDR5 등 메모리 호환 규격"
+required_psu_w_est,GPU 기준 권장 파워 용량 추정치
+length_mm_est,GPU 길이 추정치
+compatible_*_ids,"해당 부품과 호환 가능한 부품 ID 목록, | 구분"
+compatible,Compatibility_Pairs에서 TRUE/FALSE로 표시되는 호환 여부
+reason,호환 또는 비호환 사유

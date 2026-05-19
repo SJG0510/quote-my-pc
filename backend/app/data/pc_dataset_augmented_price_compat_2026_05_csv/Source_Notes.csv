@@ -1,0 +1,6 @@
+﻿source_id,name,url,used_for
+S001,User-uploaded UserBenchmark CSVs,Uploaded files in current chat,"Base benchmark rows: Rank, Benchmark, Samples, URL"
+S002,Danawa RTX 5090 category/search result,https://prod.danawa.com/list/?cate=11455088,"Representative high-end GPU price/spec anchors; RTX 5090 price, required PSU, connector, length examples"
+S003,Danawa MSI RTX 5090 product page snippet,https://prod.danawa.com/info/?pcode=75993239,"RTX 5090 required PSU, 16-pin connector, length and power examples"
+S004,Danawa PC DDR5 category/search result,https://prod.danawa.com/list/?cate=11341201,DDR5 6000 32GB/64GB price-per-GB anchors
+S005,Danawa Samsung 990 PRO 2TB product page,https://prod.danawa.com/info/?pcode=18297722,M.2 NVMe / PCIe 4.0 / SSD spec anchor

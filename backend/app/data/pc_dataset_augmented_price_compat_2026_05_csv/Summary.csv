@@ -1,0 +1,13 @@
+﻿file,rows
+CPU_augmented.csv,1424
+GPU_augmented.csv,1192
+RAM_augmented.csv,221
+SSD_augmented.csv,1158
+HDD_augmented.csv,1031
+USB_augmented.csv,645
+Motherboard.csv,20
+Cooler.csv,20
+PSU.csv,20
+Case.csv,20
+Parts_Master.csv,5751
+Compatibility_Pairs.csv,166940

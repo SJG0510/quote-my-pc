@@ -1,0 +1,10 @@
+﻿rule_id,relation,condition,result
+R001,CPU-Motherboard,CPU.socket == Motherboard.socket AND CPU memory platform supports Motherboard.memory_type,compatible
+R002,CPU-Cooler,CPU.socket IN Cooler.supported_sockets AND CPU.tdp_w_est <= Cooler.max_tdp_w,compatible
+R003,RAM-Motherboard,RAM.memory_type == Motherboard.memory_type,compatible
+R004,SSD/HDD/USB-Motherboard,M.2 NVMe requires m2_slots > 0; SATA requires sata_ports > 0; USB external requires USB port,compatible
+R005,GPU-PSU,PSU.wattage_w >= GPU.required_psu_w_est AND required GPU connector exists or can be adapted safely,compatible
+R006,GPU-Case,GPU.length_mm_est <= Case.max_gpu_length_mm,compatible
+R007,PSU-Case,PSU.form_factor in Case.psu_form_factor AND PSU.length_mm <= Case.max_psu_length_mm,compatible
+R008,Cooler-Case,Air cooler height <= case max height OR AIO radiator <= case radiator support,compatible
+R009,Motherboard-Case,Motherboard.form_factor in Case.supported_motherboard_form_factors,compatible
