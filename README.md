@@ -66,45 +66,10 @@ python -m unittest discover -s tests
 
 ## 배포
 
-프론트엔드와 백엔드는 따로 배포합니다.
+- 서비스: https://quote-my-pc-llra.vercel.app
+- 백엔드 API 문서: https://quote-my-pc-backend.onrender.com/docs
 
-### 1. 백엔드(Render)
-
-Render에서 GitHub 저장소 `SJG0510/quote-my-pc`를 연결합니다.
-
-`render.yaml`이 포함되어 있으므로 Blueprint로 생성하거나, Web Service를 직접 만들 경우 아래 값을 사용합니다.
-
-```txt
-Root Directory: backend
-Build Command: pip install -r requirements.txt
-Start Command: python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
-Health Check Path: /health
-```
-
-배포 후 아래 주소가 열리면 정상입니다.
-
-```txt
-https://<render-service-url>/docs
-```
-
-### 2. 프론트엔드(Vercel)
-
-Vercel에서 GitHub 저장소 `SJG0510/quote-my-pc`를 Import합니다.
-
-```txt
-Framework Preset: Next.js
-Root Directory: frontend
-Install Command: npm install
-Build Command: npm run build
-```
-
-Vercel 환경변수에 Render 백엔드 주소를 넣습니다.
-
-```txt
-NEXT_PUBLIC_API_BASE_URL=https://<render-service-url>/api/v1
-```
-
-환경변수를 추가하거나 수정한 뒤에는 Vercel에서 Redeploy가 필요합니다.
+> Render 무료 플랜 특성상 백엔드가 잠들어 있으면 첫 요청이 느릴 수 있습니다.
 
 ## 데이터셋
 
