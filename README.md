@@ -25,23 +25,35 @@
 
 ## 실행
 
-백엔드:
+백엔드 PowerShell:
 
-```bash
-cd backend
+```powershell
+cd D:\BMVibe\backend
 python -m venv .venv
-.venv\Scripts\activate
+.\.venv\Scripts\activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
-프론트엔드:
+가상환경을 활성화하지 않고 바로 실행하려면:
 
-```bash
-cd frontend
+```powershell
+cd D:\BMVibe\backend
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
+```
+
+프론트엔드 PowerShell:
+
+```powershell
+cd D:\BMVibe\frontend
 npm install
 npm run dev
 ```
+
+브라우저 접속:
+
+- 프론트엔드: `http://127.0.0.1:3000`
+- 백엔드 API 문서: `http://127.0.0.1:8000/docs`
 
 프론트는 `NEXT_PUBLIC_API_BASE_URL`이 없으면 `http://localhost:8000/api/v1`을 사용합니다.
 
