@@ -3,6 +3,8 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
+from app.domain.danawa_prices import get_danawa_price
+
 
 DATASET_DIR = Path(__file__).resolve().parents[1] / "data" / "pc_dataset_augmented_price_compat_2026_05_csv"
 
@@ -123,13 +125,32 @@ def _consumer_storage(row: dict[str, str]) -> bool:
 
 
 def _base_part(category: str, row: dict[str, str], scores: dict[str, float]) -> dict:
+    brand = row.get("Brand") or row.get("brand") or "Unknown"
+    model = row.get("Model") or row.get("model") or "Unknown"
+    component_type = row.get("storage_type") or row.get("Type") or category
+    scraped_price = get_danawa_price(component_type, brand, model)
+    price_source = "danawa" if scraped_price else (row.get("price_basis") or "dataset")
+    spec = {
+        "id": row.get("part_id", ""),
+        "price_source": price_source,
+        "price_reference_date": row.get("price_reference_date", ""),
+    }
+    if scraped_price:
+        spec.update(
+            {
+                "danawa_product_name": scraped_price.get("product_name", ""),
+                "danawa_url": scraped_price.get("danawa_url", ""),
+                "price_scraped_at": scraped_price.get("scraped_at", ""),
+            }
+        )
+
     return {
         "category": category,
-        "brand": row.get("Brand") or row.get("brand") or "Unknown",
-        "model": row.get("Model") or row.get("model") or "Unknown",
-        "price": _to_int(row.get("price_krw_estimate")),
+        "brand": brand,
+        "model": model,
+        "price": scraped_price["price_krw"] if scraped_price else _to_int(row.get("price_krw_estimate")),
         "scores": scores,
-        "spec": {"id": row.get("part_id", "")},
+        "spec": spec,
     }
 
 

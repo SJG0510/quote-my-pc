@@ -78,3 +78,8 @@ python -m unittest discover -s tests
 
 원본 벤치마크 CSV 데이터 출처:
 https://www.userbenchmark.com/page/developer
+
+선택적으로 다나와 스크래퍼가 생성한 가격 CSV를 `backend/data/danawa_prices/`에 둘 수 있습니다.
+예: `cpu_prices.csv`, `gpu_prices.csv`, `ram_prices.csv`, `ssd_prices.csv`
+
+이 디렉터리는 Git에 포함하지 않습니다. CSV가 없으면 기본 데이터셋의 추정 가격을 그대로 사용합니다.
