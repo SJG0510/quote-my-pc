@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { AlternativeCompare } from "@/components/quote/AlternativeCompare";
-import { evaluateCustomBuild, getAlternatives, getPartsCatalog, getQuoteDetail } from "@/lib/api-client";
+import { evaluateCustomBuild, getPartsCatalog, getQuoteDetail } from "@/lib/api-client";
 import type { AlternativeQuote, PartOption, PartsCatalogResponse, QuoteResponse } from "@/lib/types";
 
 
@@ -14,9 +14,9 @@ type Props = {
 
 export function AlternativesView({ quoteId }: Props) {
   const [primary, setPrimary] = useState<QuoteResponse | null>(null);
-  const [alternatives, setAlternatives] = useState<AlternativeQuote[]>([]);
   const [catalog, setCatalog] = useState<PartsCatalogResponse["parts"]>({});
   const [selectedPartIds, setSelectedPartIds] = useState<Record<string, string>>({});
+  const [searchTerms, setSearchTerms] = useState<Record<string, string>>({});
   const [expertQuote, setExpertQuote] = useState<AlternativeQuote | null>(null);
   const [error, setError] = useState("");
   const [expertError, setExpertError] = useState("");
@@ -32,18 +32,21 @@ export function AlternativesView({ quoteId }: Props) {
       return;
     }
 
-    Promise.all([getQuoteDetail(targetQuoteId), getAlternatives(targetQuoteId), getPartsCatalog()])
-      .then(([quoteDetail, alternativeData, catalogData]) => {
+    Promise.all([getQuoteDetail(targetQuoteId), getPartsCatalog()])
+      .then(([quoteDetail, catalogData]) => {
         setPrimary(quoteDetail);
-        setAlternatives(alternativeData.alternatives);
         setCatalog(catalogData.parts);
         setSelectedPartIds((current) => {
           if (Object.keys(current).length > 0) {
             return current;
           }
-          return Object.fromEntries(
-            categoryOrder.map((category) => [category, catalogData.parts[category]?.[0]?.id ?? ""]),
-          );
+          return getInitialSelection(quoteDetail, catalogData.parts);
+        });
+        setSearchTerms((current) => {
+          if (Object.keys(current).length > 0) {
+            return current;
+          }
+          return getInitialSearchTerms(quoteDetail, catalogData.parts);
         });
         setError("");
       })
@@ -69,23 +72,23 @@ export function AlternativesView({ quoteId }: Props) {
     );
   }
 
-  if (alternatives.length === 0) {
-    return (
-      <section className="panel empty-state">
-        <h2 className="block-title">대안 견적이 없습니다</h2>
-        <p>현재 조건에서는 비교 가능한 대안 조합을 찾지 못했습니다.</p>
-      </section>
-    );
-  }
-
   const comparableQuotes: AlternativeQuote[] = [
     ...(primary ? [toAlternativeQuote(primary)] : []),
     ...(expertQuote ? [expertQuote] : []),
-    ...alternatives,
   ];
 
   const onSelectPart = (category: string, partId: string) => {
+    const selectedPart = catalog[category]?.find((part) => part.id === partId);
     setSelectedPartIds((current) => ({ ...current, [category]: partId }));
+    if (selectedPart) {
+      setSearchTerms((current) => ({ ...current, [category]: partLabel(selectedPart) }));
+    }
+    setExpertQuote(null);
+    setExpertError("");
+  };
+
+  const onSearchPart = (category: string, value: string) => {
+    setSearchTerms((current) => ({ ...current, [category]: value }));
     setExpertQuote(null);
     setExpertError("");
   };
@@ -115,10 +118,12 @@ export function AlternativesView({ quoteId }: Props) {
       <ExpertBuildPanel
         catalog={catalog}
         selectedPartIds={selectedPartIds}
+        searchTerms={searchTerms}
         expertQuote={expertQuote}
         expertError={expertError}
         evaluating={evaluating}
         onSelectPart={onSelectPart}
+        onSearchPart={onSearchPart}
         onEvaluate={onEvaluateExpertBuild}
       />
       <AlternativeCompare quotes={comparableQuotes} />
@@ -156,21 +161,55 @@ function partLabel(part: PartOption) {
   return `${part.brand} ${part.model} · ₩${part.price.toLocaleString()}${benchmark}`;
 }
 
+function normalizeSearch(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9가-힣]+/g, "");
+}
+
+function findQuotePart(category: string, quote: QuoteResponse, catalog: Record<string, PartOption[]>) {
+  const quoteItem = quote.items.find((item) => item.category === category);
+  if (!quoteItem) {
+    return undefined;
+  }
+  return catalog[category]?.find((part) => part.brand === quoteItem.brand && part.model === quoteItem.model);
+}
+
+function getInitialSelection(quote: QuoteResponse, catalog: Record<string, PartOption[]>) {
+  return Object.fromEntries(
+    categoryOrder.map((category) => {
+      const quotePart = findQuotePart(category, quote, catalog);
+      return [category, quotePart?.id ?? ""];
+    }),
+  );
+}
+
+function getInitialSearchTerms(quote: QuoteResponse, catalog: Record<string, PartOption[]>) {
+  return Object.fromEntries(
+    categoryOrder.map((category) => {
+      const quotePart = findQuotePart(category, quote, catalog);
+      return [category, quotePart ? partLabel(quotePart) : ""];
+    }),
+  );
+}
+
 function ExpertBuildPanel({
   catalog,
   selectedPartIds,
+  searchTerms,
   expertQuote,
   expertError,
   evaluating,
   onSelectPart,
+  onSearchPart,
   onEvaluate,
 }: {
   catalog: Record<string, PartOption[]>;
   selectedPartIds: Record<string, string>;
+  searchTerms: Record<string, string>;
   expertQuote: AlternativeQuote | null;
   expertError: string;
   evaluating: boolean;
   onSelectPart: (category: string, partId: string) => void;
+  onSearchPart: (category: string, value: string) => void;
   onEvaluate: () => void;
 }) {
   const selectedParts = categoryOrder
@@ -197,16 +236,16 @@ function ExpertBuildPanel({
 
       <div className="expert-select-grid">
         {categoryOrder.map((category) => (
-          <label key={category} className="expert-select-field">
-            <span>{categoryLabels[category]}</span>
-            <select value={selectedPartIds[category] ?? ""} onChange={(event) => onSelectPart(category, event.target.value)}>
-              {(catalog[category] ?? []).map((part) => (
-                <option key={part.id} value={part.id}>
-                  {partLabel(part)}
-                </option>
-              ))}
-            </select>
-          </label>
+          <PartSearchField
+            key={category}
+            category={category}
+            label={categoryLabels[category]}
+            parts={catalog[category] ?? []}
+            selectedPartId={selectedPartIds[category] ?? ""}
+            searchTerm={searchTerms[category] ?? ""}
+            onSearch={onSearchPart}
+            onSelect={onSelectPart}
+          />
         ))}
       </div>
 
@@ -218,5 +257,62 @@ function ExpertBuildPanel({
         {expertError ? <span className="error-box compact">{expertError}</span> : null}
       </div>
     </section>
+  );
+}
+
+function PartSearchField({
+  category,
+  label,
+  parts,
+  selectedPartId,
+  searchTerm,
+  onSearch,
+  onSelect,
+}: {
+  category: string;
+  label: string;
+  parts: PartOption[];
+  selectedPartId: string;
+  searchTerm: string;
+  onSearch: (category: string, value: string) => void;
+  onSelect: (category: string, partId: string) => void;
+}) {
+  const [focused, setFocused] = useState(false);
+  const normalizedQuery = normalizeSearch(searchTerm);
+  const selectedPart = parts.find((part) => part.id === selectedPartId);
+  const filteredParts = parts
+    .filter((part) => {
+      if (!normalizedQuery) {
+        return true;
+      }
+      return normalizeSearch(`${part.brand} ${part.model}`).includes(normalizedQuery);
+    })
+    .slice(0, 8);
+  const showResults = focused && filteredParts.length > 0;
+
+  return (
+    <div className="expert-select-field">
+      <span>{label}</span>
+      <div className="part-search-box">
+        <input
+          value={searchTerm}
+          placeholder={`${label} 검색`}
+          onChange={(event) => onSearch(category, event.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => window.setTimeout(() => setFocused(false), 120)}
+        />
+        {selectedPart ? <div className="selected-part-hint">선택됨: {selectedPart.brand} {selectedPart.model}</div> : null}
+        {showResults ? (
+          <div className="part-search-results">
+            {filteredParts.map((part) => (
+              <button key={part.id} type="button" onMouseDown={() => onSelect(category, part.id)}>
+                <strong>{part.brand} {part.model}</strong>
+                <span>₩{part.price.toLocaleString()}{part.benchmark_score ? ` · ${Math.round(part.benchmark_score)}점` : ""}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </div>
   );
 }
