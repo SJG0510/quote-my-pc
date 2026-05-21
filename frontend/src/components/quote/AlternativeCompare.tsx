@@ -1,4 +1,4 @@
-import { Cpu, HardDrive, MemoryStick, MonitorSmartphone, PlugZap } from "lucide-react";
+import { Box, Cpu, HardDrive, MemoryStick, MonitorSmartphone, PlugZap, Snowflake } from "lucide-react";
 import type { ComponentType } from "react";
 import Link from "next/link";
 
@@ -18,10 +18,13 @@ const specRows: Array<{
   icon: ComponentType<{ className?: string }>;
 }> = [
   { category: "cpu", label: "프로세서", icon: Cpu },
+  { category: "motherboard", label: "메인보드", icon: Box },
+  { category: "cooler", label: "쿨러", icon: Snowflake },
   { category: "gpu", label: "그래픽", icon: MonitorSmartphone },
   { category: "ram", label: "메모리", icon: MemoryStick },
-  { category: "psu", label: "파워", icon: PlugZap },
   { category: "storage", label: "저장장치", icon: HardDrive },
+  { category: "psu", label: "파워", icon: PlugZap },
+  { category: "case", label: "케이스", icon: Box },
 ];
 
 function findPart(items: QuoteItem[], category: string) {
