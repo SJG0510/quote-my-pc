@@ -6,11 +6,11 @@ import type { AlternativeQuote, QuoteItem } from "@/lib/types";
 
 
 type Props = {
-  alternatives: AlternativeQuote[];
+  quotes: AlternativeQuote[];
 };
 
-const tierLabels = ["대안 1", "대안 2", "대안 3", "대안 4"];
-const titles = ["가격 우선 견적", "균형형 견적", "성능 우선 견적", "저장공간 우선 견적"];
+const tierLabels = ["AI 추천", "전문가 견적", "대안 1", "대안 2", "대안 3", "대안 4"];
+const titles = ["추천 엔진 견적", "직접 지정 견적", "가격 우선 견적", "균형형 견적", "성능 우선 견적", "저장공간 우선 견적"];
 
 const specRows: Array<{
   category: string;
@@ -32,11 +32,12 @@ function formatPart(part?: QuoteItem) {
   return part ? `${part.brand} ${part.model}` : "미정";
 }
 
-export function AlternativeCompare({ alternatives }: Props) {
+export function AlternativeCompare({ quotes }: Props) {
   return (
     <div className="compare-grid">
-      {alternatives.map((alternative, index) => {
+      {quotes.map((alternative, index) => {
         const scoreValue = Math.max(12, Math.min(100, Math.round((alternative.score / 100) * 100)));
+        const hasFailures = alternative.checks.some((check) => check.status === "fail");
 
         return (
           <article key={alternative.quote_id} className="compare-card panel">
@@ -52,9 +53,10 @@ export function AlternativeCompare({ alternatives }: Props) {
               <h2 className="block-title" style={{ marginBottom: 8 }}>
                 {titles[index] ?? `대안 견적 ${index + 1}`}
               </h2>
-              <div className="metric-value" style={{ color: "#6671ff", fontSize: 46 }}>
+              <div className="metric-value">
                 ₩{alternative.total_price.toLocaleString()}
               </div>
+              <div className={`status-pill ${hasFailures ? "fail" : "pass"}`}>{hasFailures ? "호환성 실패" : "호환성 통과"}</div>
 
               <div className="feature-stack">
                 {specRows.map(({ category, label, icon: Icon }) => {
@@ -88,9 +90,11 @@ export function AlternativeCompare({ alternatives }: Props) {
                 <div className="score-bar">
                   <div className="score-fill" style={{ width: `${scoreValue}%` }} />
                 </div>
-                <Link className={index === 1 ? "button-primary" : "button-ghost"} href={`/quote/result?quote_id=${alternative.quote_id}`}>
-                  선택하기
-                </Link>
+                {alternative.quote_id === "expert_custom" ? null : (
+                  <Link className={index === 0 ? "button-primary" : "button-ghost"} href={`/quote/result?quote_id=${alternative.quote_id}`}>
+                    선택하기
+                  </Link>
+                )}
               </div>
             </div>
           </article>

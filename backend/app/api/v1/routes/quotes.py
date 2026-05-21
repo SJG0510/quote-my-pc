@@ -1,11 +1,33 @@
 from fastapi import APIRouter, HTTPException
 
-from app.domain.recommender import recommend_builds
-from app.domain.schemas import QuoteRequestPayload
+from app.domain.compatibility_engine import validate_build
+from app.domain.recommender import CATEGORY_ORDER, recommend_builds
+from app.domain.sample_data import PARTS
+from app.domain.schemas import CustomBuildPayload, QuoteItem, QuoteRequestPayload
+from app.domain.scoring import score_build
 from app.domain.store import delete_saved_quote, get_quote_bundle, get_quote_result, get_saved_quote, list_saved_quotes, save_quote
 
 
 router = APIRouter()
+
+
+def _part_by_id() -> dict[str, dict]:
+    return {part["spec"]["id"]: part for part in PARTS}
+
+
+def _item_reason(category: str, part: dict) -> str:
+    spec = part["spec"]
+    if category == "cpu" and spec.get("benchmark_score"):
+        return f"CPU 벤치마크 {spec['benchmark_score']}점을 비교에 반영했습니다."
+    if category == "gpu" and spec.get("benchmark_score"):
+        return f"GPU 벤치마크 {spec['benchmark_score']}점과 VRAM {spec.get('vram_gb', 0)}GB를 반영했습니다."
+    if category == "ram":
+        return f"{spec.get('ram_type', 'RAM')} {spec.get('capacity_gb', 0)}GB 구성을 반영했습니다."
+    if category == "psu":
+        return f"{spec.get('watt', 0)}W 파워 용량을 반영했습니다."
+    if category == "storage":
+        return f"{spec.get('capacity_gb', 0)}GB 저장공간을 반영했습니다."
+    return "사용자가 직접 선택한 부품입니다."
 
 
 @router.post("/recommend")
@@ -26,6 +48,65 @@ def recommend_quote(payload: QuoteRequestPayload) -> dict:
             "generated_at": bundle["generated_at"],
         },
         "message": "견적을 생성했습니다.",
+    }
+
+
+@router.post("/custom-evaluate")
+def evaluate_custom_build(payload: CustomBuildPayload) -> dict:
+    parts_by_id = _part_by_id()
+    missing_categories = [category for category in CATEGORY_ORDER if not payload.selected_part_ids.get(category)]
+    if missing_categories:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "MISSING_CUSTOM_PARTS",
+                "message": "전문가 견적의 필수 부품을 모두 선택해 주세요.",
+                "details": missing_categories,
+            },
+        )
+
+    build: dict[str, dict] = {}
+    for category in CATEGORY_ORDER:
+        part_id = payload.selected_part_ids[category]
+        part = parts_by_id.get(part_id)
+        if part is None or part["category"] != category:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "INVALID_CUSTOM_PART",
+                    "message": f"{category} 부품 선택값이 올바르지 않습니다.",
+                    "details": [part_id],
+                },
+            )
+        build[category] = part
+
+    checks = validate_build(build)
+    total_price = sum(part["price"] for part in build.values())
+    score = score_build(build, payload.purpose, payload.budget)
+    items = [
+        QuoteItem(
+            category=category,
+            brand=build[category]["brand"],
+            model=build[category]["model"],
+            price=build[category]["price"],
+            reason=_item_reason(category, build[category]),
+        )
+        for category in CATEGORY_ORDER
+    ]
+
+    return {
+        "success": True,
+        "data": {
+            "quote_id": "expert_custom",
+            "total_price": total_price,
+            "score": round(score, 2),
+            "summary": f"전문가가 직접 지정한 부품 조합입니다. 총액은 {total_price:,}원입니다.",
+            "items": [item.model_dump() for item in items],
+            "checks": [check.model_dump() for check in checks],
+            "warnings": [check.message for check in checks if check.status == "warn"],
+            "diff_points": [],
+        },
+        "message": "전문가 견적을 평가했습니다.",
     }
 
 

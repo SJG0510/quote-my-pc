@@ -17,6 +17,12 @@ class QuoteRequestPayload(BaseModel):
         return [brand.strip() for brand in value if brand.strip()]
 
 
+class CustomBuildPayload(BaseModel):
+    budget: int = Field(..., ge=300_000, le=10_000_000)
+    purpose: Purpose
+    selected_part_ids: dict[str, str]
+
+
 class QuoteItem(BaseModel):
     category: str
     brand: str

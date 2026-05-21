@@ -46,6 +46,26 @@ export type AlternativeQuote = {
   diff_points: string[];
 };
 
+export type PartOption = {
+  id: string;
+  category: string;
+  brand: string;
+  model: string;
+  price: number;
+  benchmark_score?: number;
+  spec: Record<string, string | number | boolean | undefined>;
+};
+
+export type PartsCatalogResponse = {
+  parts: Record<string, PartOption[]>;
+};
+
+export type CustomBuildRequest = {
+  budget: number;
+  purpose: Purpose;
+  selected_part_ids: Record<string, string>;
+};
+
 export type FiltersResponse = {
   brands: Record<string, string[]>;
   categories: string[];

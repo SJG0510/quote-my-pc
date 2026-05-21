@@ -1,4 +1,4 @@
-import type { AlternativeQuote, FiltersResponse, QuoteRequest, QuoteResponse, SavedQuote } from "./types";
+import type { AlternativeQuote, CustomBuildRequest, FiltersResponse, PartsCatalogResponse, QuoteRequest, QuoteResponse, SavedQuote } from "./types";
 
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
@@ -29,6 +29,10 @@ export function getFilters(): Promise<FiltersResponse> {
   return fetchJson<FiltersResponse>("/parts/filters");
 }
 
+export function getPartsCatalog(): Promise<PartsCatalogResponse> {
+  return fetchJson<PartsCatalogResponse>("/parts/catalog");
+}
+
 
 export function createQuote(payload: QuoteRequest): Promise<QuoteResponse> {
   return fetchJson<QuoteResponse>("/quotes/recommend", {
@@ -45,6 +49,13 @@ export function getQuoteDetail(quoteId: string): Promise<QuoteResponse> {
 
 export function getAlternatives(quoteId: string): Promise<{ quote_id: string; alternatives: AlternativeQuote[] }> {
   return fetchJson<{ quote_id: string; alternatives: AlternativeQuote[] }>(`/quotes/${quoteId}/alternatives`);
+}
+
+export function evaluateCustomBuild(payload: CustomBuildRequest): Promise<AlternativeQuote> {
+  return fetchJson<AlternativeQuote>("/quotes/custom-evaluate", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export function saveQuote(quoteId: string): Promise<SavedQuote> {
